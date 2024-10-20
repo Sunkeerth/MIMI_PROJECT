@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BITM - QR Code, Barcode, and Aadhaar Scanner</title>
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/npm/jsqr"
+    ></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        margin: 0;
+        background: linear-gradient(135deg, #f0f4f8, #d9e2ec);
+        color: #333;
+      }
+      #qr-video-container {
+        position: relative;
+        margin-bottom: 20px;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      }
+      #qr-video {
+        width: 100%;
+        height: auto;
+      }
+      #qr-data {
+        margin-top: 20px;
+        font-size: 1.2em;
+        text-align: center;
+        background-color: #fff;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+        transition: opacity 0.3s ease;
+      }
+    </style>
+  </head>
+  <body>
+    <h1 style="text-align: center; color: #003366">
+      BITM - QR Code, Barcode, and Aadhaar Scanner
+    </h1>
+    <div id="qr-video-container">
+      <video id="qr-video" playsinline></video>
+    </div>
+    <div id="qr-data" style="opacity: 0"></div>
+    <canvas id="qr-canvas" style="display: none"></canvas>
+
+    <script type="text/javascript">
+      navigator.mediaDevices
+        .getUserMedia({ video: { facingMode: "environment" } })
+        .then(function (stream) {
+          var video = document.getElementById("qr-video");
+          video.srcObject = stream;
+          video.play();
+        })
+        .catch(function (err) {
+          console.error("Error accessing camera:", err);
+        });
+
+      function scanQRCode() {
+        var video = document.getElementById("qr-video");
+        var canvasElement = document.getElementById("qr-canvas");
+        var canvas = canvasElement.getContext("2d");
+
+        canvasElement.width = video.videoWidth;
+        canvasElement.height = video.videoHeight;
+        canvas.drawImage(
+          video,
+          0,
+          0,
+          canvasElement.width,
+          canvasElement.height
+        );
+
+        var imageData = canvas.getImageData(
+          0,
+          0,
+          canvasElement.width,
+          canvasElement.height
+        );
+        var code = jsQR(imageData.data, imageData.width, imageData.height);
+
+        if (code) {
+          console.log("QR Code detected:", code.data);
+          handleScannedData(code.data);
+        }
+      }
+
+      function startBarcodeScanner() {
+        Quagga.init(
+          {
+            inputStream: {
+              name: "Live",
+              type: "LiveStream",
+              target: document.querySelector("#qr-video"),
+              constraints: {
+                width: 640,
+                height: 480,
+                facingMode: "environment", // Use the back camera
+              },
+            },
+            decoder: {
+              readers: [
+                "code_128_reader",
+                "ean_reader",
+                "ean_8_reader",
+                "upc_reader",
+                "upc_e_reader",
+              ], // Supported barcodes
+            },
+          },
+          function (err) {
+            if (err) {
+              console.error("QuaggaJS initialization failed:", err);
+              return;
+            }
+            console.log("Barcode scanner initialized");
+            Quagga.start();
+          }
+        );
+
+        Quagga.onDetected(function (result) {
+          if (result && result.codeResult) {
+            console.log("Barcode detected:", result.codeResult.code);
+            handleScannedData(result.codeResult.code);
+          }
+        });
+      }
+
+      function handleScannedData(data) {
+        // Aadhaar numbers are 12 digits, modify detection for that
+        const aadhaarRegex = /\b\d{12}\b/;
+
+        // Check if the scanned data contains an Aadhaar number
+        if (aadhaarRegex.test(data)) {
+          const aadhaarNumber = data.match(aadhaarRegex)[0];
+          console.log("Aadhaar detected:", aadhaarNumber);
+          displayQRCodeData(`Aadhaar Number: ${aadhaarNumber}`);
+        } else {
+          // Treat as general QR code or barcode content otherwise
+          displayQRCodeData(data);
+        }
+      }
+
+      function displayQRCodeData(data) {
+        var qrDataDiv = document.getElementById("qr-data");
+        var lines = data.split("\n"); // Split the data by newline or any other delimiter
+        qrDataDiv.innerHTML = ""; // Clear previous data
+
+        lines.forEach((line, index) => {
+          setTimeout(() => {
+            var p = document.createElement("p");
+            p.textContent = line;
+            qrDataDiv.appendChild(p);
+            qrDataDiv.style.opacity = 1; // Make it visible when new data is added
+          }, index * 1000); // Display each line one after the other with a 1-second delay
+        });
+      }
+
+      // Initiate the QR code scanning process every 1 second
+      setInterval(scanQRCode, 1000);
+
+      // Start barcode scanner after the page loads
+      window.onload = function () {
+        startBarcodeScanner();
+      };
+    </script>
+  </body>
+</html>
