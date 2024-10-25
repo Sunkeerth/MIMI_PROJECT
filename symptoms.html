@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Symptom Selector</title>
+  </head>
+  <body>
+    <h1>Select Your Symptoms</h1>
+    <form id="symptomForm">
+      <label><input type="radio" name="symptom" value="Fever" /> Fever</label
+      ><br />
+      <label><input type="radio" name="symptom" value="Cough" /> Cough</label
+      ><br />
+      <label
+        ><input type="radio" name="symptom" value="Headache" /> Headache</label
+      ><br />
+      <label
+        ><input type="radio" name="symptom" value="Fatigue" /> Fatigue</label
+      ><br />
+      <button type="button" onclick="proceedToAppointment()">Next</button>
+    </form>
+    <script>
+      function proceedToAppointment() {
+        const symptom = document.querySelector(
+          'input[name="symptom"]:checked'
+        ).value;
+        sessionStorage.setItem("selectedSymptom", symptom);
+        window.location.href = "appointment-details.html";
+      }
+    </script>
+  </body>
+</html>
