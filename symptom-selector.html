@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Symptom Selector with Voice</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f7fc;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+      .container {
+        background-color: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 500px;
+      }
+      h1 {
+        color: #333;
+        text-align: center;
+      }
+      p {
+        font-size: 1.1em;
+        color: #555;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+      .symptom-category {
+        margin-bottom: 20px;
+      }
+      .symptom-category h3 {
+        color: #333;
+        font-size: 1.2em;
+      }
+      .symptom-category label {
+        display: block;
+        font-size: 1em;
+        color: #333;
+        margin: 8px 0;
+      }
+      button {
+        width: 100%;
+        padding: 12px;
+        background-color: #003366;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 1.1em;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #005b99;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Select Your Symptoms</h1>
+      <p>Symptoms will be selected automatically based on your voice input. Speak clearly to ensure accuracy.</p>
+
+      <form id="symptomForm">
+        <div class="symptom-category">
+          <h3>Common Symptoms</h3>
+          <label><input type="checkbox" name="common" value="Fever" /> Fever (high temperature)</label>
+          <label><input type="checkbox" name="common" value="Cough" /> Cough</label>
+          <label><input type="checkbox" name="common" value="Sore Throat" /> Sore Throat</label>
+          <label><input type="checkbox" name="common" value="Headache" /> Headache</label>
+        </div>
+
+        <div class="symptom-category">
+          <h3>Fatigue and Body Pain</h3>
+          <label><input type="checkbox" name="fatigue" value="Tiredness" /> Feeling tired or weak</label>
+          <label><input type="checkbox" name="fatigue" value="Body Aches" /> Body Aches or Pain</label>
+          <label><input type="checkbox" name="fatigue" value="Chills" /> Chills (feeling cold)</label>
+        </div>
+
+        <div class="symptom-category">
+          <h3>Breathing and Other Symptoms</h3>
+          <label><input type="checkbox" name="breathing" value="Shortness of Breath" /> Shortness of Breath (trouble breathing)</label>
+          <label><input type="checkbox" name="breathing" value="Loss of Smell" /> Loss of Smell or Taste</label>
+          <label><input type="checkbox" name="breathing" value="Nausea" /> Nausea or Upset Stomach</label>
+        </div>
+
+        <div class="symptom-category">
+          <h3>Additional Symptoms</h3>
+          <label><input type="checkbox" name="additional" value="Dizziness" /> Dizziness or Lightheadedness</label>
+          <label><input type="checkbox" name="additional" value="Rash" /> Skin Rash</label>
+          <label><input type="checkbox" name="additional" value="Vomiting" /> Vomiting (throwing up)</label>
+        </div>
+
+        <div class="form-group">
+          <button type="button" onclick="proceedToAppointment()">Next</button>
+        </div>
+      </form>
+    </div>
+
+    <script>
+      if (!('SpeechRecognition' in window) && !('webkitSpeechRecognition' in window)) {
+        alert("Your browser does not support voice recognition.");
+      } else {
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        recognition.onstart = function () {
+          console.log("Voice recognition started. Speak now.");
+        };
+
+        recognition.onresult = function (event) {
+          const spokenWords = event.results[0][0].transcript.toLowerCase();
+          console.log("You said:", spokenWords);
+          handleVoiceSelection(spokenWords);
+        };
+
+        recognition.onerror = function (event) {
+          alert("Voice recognition error. Please try again and speak clearly.");
+          console.error("Error:", event.error);
+        };
+
+        recognition.onend = function () {
+          alert("Voice recognition ended. Restarting recognition...");
+          recognition.start(); // Automatically restart recognition
+        };
+
+        function handleVoiceSelection(spokenWords) {
+          const symptomKeywords = {
+            "fever": "Fever",
+            "cough": "Cough",
+            "sore throat": "Sore Throat",
+            "headache": "Headache",
+            "tiredness": "Tiredness",
+            "body aches": "Body Aches",
+            "chills": "Chills",
+            "shortness of breath": "Shortness of Breath",
+            "loss of smell": "Loss of Smell",
+            "nausea": "Nausea",
+            "dizziness": "Dizziness",
+            "rash": "Rash",
+            "vomiting": "Vomiting",
+          };
+
+          let matched = false;
+
+          Object.keys(symptomKeywords).forEach((key) => {
+            if (spokenWords.includes(key)) {
+              const symptom = symptomKeywords[key];
+              const checkbox = document.querySelector(`input[type="checkbox"][value="${symptom}"]`);
+              if (checkbox) {
+                checkbox.checked = true;
+                matched = true;
+              }
+            }
+          });
+
+          if (!matched) {
+            alert("Unable to recognize your symptoms. Please speak clearly.");
+          }
+        }
+
+        function proceedToAppointment() {
+          const selectedSymptoms = [];
+          const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+
+          checkboxes.forEach((checkbox) => {
+            selectedSymptoms.push(checkbox.value);
+          });
+
+          if (selectedSymptoms.length === 0) {
+            alert("Please select at least one symptom.");
+            return;
+          }
+          // Get the session ID (can be generated uniquely on page load or retrieved from session storage)
+  const sessionId = sessionStorage.getItem("sessionId") || new Date().toISOString();
+
+        // Store the session ID in sessionStorage for future use
+        sessionStorage.setItem("sessionId", sessionId);
+
+        // Send data to the backend
+        fetch('/save-symptoms', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user_id: 1,  // Assuming user_id is 1 for testing or replace with actual user info
+            symptoms: selectedSymptoms,
+            session_id: sessionId
+          })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.message) {
+            alert(data.message);
+            window.location.href = "appointment-details.html";  // Proceed to next page
+          } else {
+            alert("There was an error saving your symptoms.");
+          }
+        })
+        .catch(error => {
+          console.error("Error:", error);
+          alert("There was an error saving your symptoms.");
+        });
+        
+
+          sessionStorage.setItem("selectedSymptoms", JSON.stringify(selectedSymptoms));
+          window.location.href = "appointment-details.html";
+        }
+
+        // Automatically start voice recognition on page load
+        window.onload = function () {
+          alert("Voice recognition is starting. Please mention your symptoms.");
+          recognition.start();
+        };
+      }
+      
+    </script>
+  </body>
+</html>
